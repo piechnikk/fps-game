@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FPS</title>
+    <style>
+        * {
+            font-family: Avenir, Helvetica, Arial, sans-serif;
+        }
+
+        #container {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        #editBoard {
+            display: flex;
+            flex-wrap: wrap;
+            width: 40vw;
+            height: 40vw;
+        }
+
+        .boardDivs {
+            width: calc(4vw - 3px);
+            height: calc(4vw - 2px);
+            border: 1px solid black;
+        }
+
+        #controlPanel {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            width: 20vw;
+        }
+
+        #text {
+            overflow: auto;
+            height: 40vw;
+            width: 30vw;
+            border: 1px solid black;
+        }
+
+        .buttons {
+            font-size: 2vw;
+            color: white;
+            text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+            text-align: center;
+            margin: 0.5vw;
+            padding: 0.5vw;
+            cursor: pointer;
+        }
+
+        #save,
+        #load,
+        #test {
+            background-color: black;
+        }
+
+        pre {
+            margin: 0;
+            font-size: 1.6vw;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="container">
+        <div id="editBoard"></div>
+        <div id="controlPanel">
+            <div id="save" class="buttons">zapisz level na serwerze</div>
+            <div id="test" class="buttons">zapisz test level na serwerze</div>
+            <div id="load" class="buttons">wczytaj level z serwera</div>
+        </div>
+        <div id="text"></div>
+    </div>
+    <script>
+        //zmienne
+        let buttons = [
+            { text: "wall", color: "green" },
+            { text: "enemy", color: "red" },
+            { text: "treasure", color: "blue" },
+            { text: "light", color: "yellow" },
+            { text: "delete", color: "white" },
+        ]
+        let json = []
+        //wybrany typ itema
+        let type = null
+
+        //tworzenie 100 divów w planszy do edycji
+        let board = document.getElementById("editBoard")
+        for (let i = 0; i < 100; i++) {
+            let div = document.createElement("div")
+            div.classList.add("boardDivs")
+            div.addEventListener("click", function () {
+                if (type == null) {
+                    window.alert("Wybierz typ itema!")
+                } else {
+                    div.style.backgroundColor = type.color
+                    if (json.length == 0) {
+                        if (type.text != "delete") { //jeśli wybrano delete i nie ma nic na planszy to nic się nie wykona
+                            let x = parseInt(i.toString()[1])
+                            let z = parseInt(i.toString()[0])
+                            if (i < 10) {
+                                z = 0
+                                x = i
+                            }
+                            json.push({ id: i, x: x, y: 0, z: z, type: type.text })
+                        }
+                    } else {
+                        for (let j = 0; j < json.length; j++) {
+                            if (json[j].id == i) { //jeśli coś stoi na tym miejscu
+                                if (type.text != "delete") {  //gdy jest coś innego niż delete to zmienia istniejący
+                                    let x = parseInt(i.toString()[1])
+                                    let z = parseInt(i.toString()[0])
+                                    if (i < 10) {
+                                        z = 0
+                                        x = i
+                                    }
+                                    json[j] = { id: i, x: x, y: 0, z: z, type: type.text }
+                                } else //gdy mamy wybrany delete to usuwa
+                                    json.splice(j, 1)
+                                break
+                            } else if (j == json.length - 1 && type.text != "delete") { //jeśli nic nie stoi na tym miejscu i mamy wybrane coś innego niż delete
+                                let x = parseInt(i.toString()[1])
+                                let z = parseInt(i.toString()[0])
+                                if (i < 10) {
+                                    z = 0
+                                    x = i
+                                }
+                                json.push({ id: i, x: x, y: 0, z: z, type: type.text })
+                            }
+                        }
+                    }
+                }
+                document.getElementById("text").innerHTML = "<pre>" + JSON.stringify(json, null, 3)
+            })
+            board.appendChild(div)
+        }
+
+        //zapis na serwer
+        document.getElementById("save").addEventListener("click", function () {
+            //fetch na serwer
+            console.log("fetch");
+            const body = JSON.stringify(json)
+            const headers = { "Contet-Type": "application/json" } // nagłowek czyli typ danych
+
+            fetch("/add", { method: "post", body, headers }) // fetch
+                .then(response => response.json())
+                .then(data => window.alert("zapisano na serwerze"))
+        })
+
+        //zapis test na serwer
+        document.getElementById("test").addEventListener("click", function () {
+            //fetch na serwer
+            const body = JSON.stringify(
+                [
+                    {
+                        "id": 0,
+                        "x": 0,
+                        "y": 0,
+                        "z": 0,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 10,
+                        "x": 0,
+                        "y": 0,
+                        "z": 1,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 20,
+                        "x": 0,
+                        "y": 0,
+                        "z": 2,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 30,
+                        "x": 0,
+                        "y": 0,
+                        "z": 3,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 40,
+                        "x": 0,
+                        "y": 0,
+                        "z": 4,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 50,
+                        "x": 0,
+                        "y": 0,
+                        "z": 5,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 60,
+                        "x": 0,
+                        "y": 0,
+                        "z": 6,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 70,
+                        "x": 0,
+                        "y": 0,
+                        "z": 7,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 80,
+                        "x": 0,
+                        "y": 0,
+                        "z": 8,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 90,
+                        "x": 0,
+                        "y": 0,
+                        "z": 9,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 92,
+                        "x": 2,
+                        "y": 0,
+                        "z": 9,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 91,
+                        "x": 1,
+                        "y": 0,
+                        "z": 9,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 93,
+                        "x": 3,
+                        "y": 0,
+                        "z": 9,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 94,
+                        "x": 4,
+                        "y": 0,
+                        "z": 9,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 95,
+                        "x": 5,
+                        "y": 0,
+                        "z": 9,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 96,
+                        "x": 6,
+                        "y": 0,
+                        "z": 9,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 97,
+                        "x": 7,
+                        "y": 0,
+                        "z": 9,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 99,
+                        "x": 9,
+                        "y": 0,
+                        "z": 9,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 89,
+                        "x": 9,
+                        "y": 0,
+                        "z": 8,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 79,
+                        "x": 9,
+                        "y": 0,
+                        "z": 7,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 69,
+                        "x": 9,
+                        "y": 0,
+                        "z": 6,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 59,
+                        "x": 9,
+                        "y": 0,
+                        "z": 5,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 49,
+                        "x": 9,
+                        "y": 0,
+                        "z": 4,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 39,
+                        "x": 9,
+                        "y": 0,
+                        "z": 3,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 29,
+                        "x": 9,
+                        "y": 0,
+                        "z": 2,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 19,
+                        "x": 9,
+                        "y": 0,
+                        "z": 1,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 9,
+                        "x": 9,
+                        "y": 0,
+                        "z": 0,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 7,
+                        "x": 7,
+                        "y": 0,
+                        "z": 0,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 8,
+                        "x": 8,
+                        "y": 0,
+                        "z": 0,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 6,
+                        "x": 6,
+                        "y": 0,
+                        "z": 0,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 5,
+                        "x": 5,
+                        "y": 0,
+                        "z": 0,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 4,
+                        "x": 4,
+                        "y": 0,
+                        "z": 0,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 3,
+                        "x": 3,
+                        "y": 0,
+                        "z": 0,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 2,
+                        "x": 2,
+                        "y": 0,
+                        "z": 0,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 1,
+                        "x": 1,
+                        "y": 0,
+                        "z": 0,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 22,
+                        "x": 2,
+                        "y": 0,
+                        "z": 2,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 23,
+                        "x": 3,
+                        "y": 0,
+                        "z": 2,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 24,
+                        "x": 4,
+                        "y": 0,
+                        "z": 2,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 26,
+                        "x": 6,
+                        "y": 0,
+                        "z": 2,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 27,
+                        "x": 7,
+                        "y": 0,
+                        "z": 2,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 37,
+                        "x": 7,
+                        "y": 0,
+                        "z": 3,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 47,
+                        "x": 7,
+                        "y": 0,
+                        "z": 4,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 57,
+                        "x": 7,
+                        "y": 0,
+                        "z": 5,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 87,
+                        "x": 7,
+                        "y": 0,
+                        "z": 8,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 77,
+                        "x": 7,
+                        "y": 0,
+                        "z": 7,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 76,
+                        "x": 6,
+                        "y": 0,
+                        "z": 7,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 66,
+                        "x": 6,
+                        "y": 0,
+                        "z": 6,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 55,
+                        "x": 5,
+                        "y": 0,
+                        "z": 5,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 35,
+                        "x": 5,
+                        "y": 0,
+                        "z": 3,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 33,
+                        "x": 3,
+                        "y": 0,
+                        "z": 3,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 32,
+                        "x": 2,
+                        "y": 0,
+                        "z": 3,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 42,
+                        "x": 2,
+                        "y": 0,
+                        "z": 4,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 53,
+                        "x": 3,
+                        "y": 0,
+                        "z": 5,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 62,
+                        "x": 2,
+                        "y": 0,
+                        "z": 6,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 72,
+                        "x": 2,
+                        "y": 0,
+                        "z": 7,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 73,
+                        "x": 3,
+                        "y": 0,
+                        "z": 7,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 74,
+                        "x": 4,
+                        "y": 0,
+                        "z": 7,
+                        "type": "wall"
+                    },
+                    {
+                        "id": 67,
+                        "x": 7,
+                        "y": 0,
+                        "z": 6,
+                        "type": "enemy"
+                    },
+                    {
+                        "id": 25,
+                        "x": 5,
+                        "y": 0,
+                        "z": 2,
+                        "type": "enemy"
+                    },
+                    {
+                        "id": 34,
+                        "x": 4,
+                        "y": 0,
+                        "z": 3,
+                        "type": "enemy"
+                    },
+                    {
+                        "id": 36,
+                        "x": 6,
+                        "y": 0,
+                        "z": 3,
+                        "type": "enemy"
+                    },
+                    {
+                        "id": 52,
+                        "x": 2,
+                        "y": 0,
+                        "z": 5,
+                        "type": "enemy"
+                    },
+                    {
+                        "id": 63,
+                        "x": 3,
+                        "y": 0,
+                        "z": 6,
+                        "type": "enemy"
+                    },
+                    {
+                        "id": 56,
+                        "x": 6,
+                        "y": 0,
+                        "z": 5,
+                        "type": "treasure"
+                    },
+                    {
+                        "id": 98,
+                        "x": 8,
+                        "y": 0,
+                        "z": 9,
+                        "type": "light"
+                    },
+                    {
+                        "id": 48,
+                        "x": 8,
+                        "y": 0,
+                        "z": 4,
+                        "type": "light"
+                    },
+                    {
+                        "id": 17,
+                        "x": 7,
+                        "y": 0,
+                        "z": 1,
+                        "type": "light"
+                    },
+                    {
+                        "id": 11,
+                        "x": 1,
+                        "y": 0,
+                        "z": 1,
+                        "type": "light"
+                    },
+                    {
+                        "id": 71,
+                        "x": 1,
+                        "y": 0,
+                        "z": 7,
+                        "type": "light"
+                    },
+                    {
+                        "id": 65,
+                        "x": 5,
+                        "y": 0,
+                        "z": 6,
+                        "type": "light"
+                    },
+                    {
+                        "id": 46,
+                        "x": 6,
+                        "y": 0,
+                        "z": 4,
+                        "type": "light"
+                    }
+                ]
+            )
+            const headers = { "Contet-Type": "application/json" } // nagłowek czyli typ danych
+
+            fetch("/add", { method: "post", body, headers }) // fetch
+                .then(response => response.json())
+                .then(data => window.alert("zapisano na serwerze"))
+        })
+
+        //wczytanie z serwera
+        document.getElementById("load").addEventListener("click", function () {
+            //fetch na serwer
+            fetch("/load", { method: "post" }) // fetch
+                .then(response => response.json())
+                .then(data => {
+                    json = data.list
+                    document.getElementById("text").innerHTML = "<pre>" + JSON.stringify(json, null, 3)
+                    let divs = document.getElementsByClassName("boardDivs")
+                    for (let i = 0; i < divs.length; i++) {
+                        divs[i].style.backgroundColor = ""
+
+                    }
+                    for (let i = 0; i < data.size; i++) {
+                        for (let j = 0; j < buttons.length; j++) {
+                            if (buttons[j].text == json[i].type) {
+                                divs[json[i].id].style.backgroundColor = buttons[j].color
+                                break
+                            }
+                        }
+                    }
+                })
+
+            console.log("fetch load");
+        })
+
+        //tworzenie divóv do wyboru elementu
+        let panel = document.getElementById("controlPanel")
+        for (let i = 0; i < buttons.length; i++) {
+            let div = document.createElement("div")
+            div.classList.add("buttons")
+            div.innerText = buttons[i].text
+            div.style.backgroundColor = buttons[i].color
+            div.addEventListener("click", function () {
+                let panelButtons = document.getElementsByClassName("buttons")
+                for (let j = 0; j < panelButtons.length; j++) {
+                    panelButtons[j].style.border = ""
+                }
+                div.style.border = "0.5vw solid black"
+                type = buttons[i]
+            })
+            panel.appendChild(div)
+        }
+    </script>
+</body>
+
+</html>
