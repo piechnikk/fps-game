@@ -36,7 +36,7 @@ Explore the [live demo](http://fps-game.piechnik.ct8.pl/) of the fps-game app.
 
    - Run the application using the following command:
      ```sh
-     java -jar yourapp-v1.0.0.jar
+     java -jar fps-game-v0.1.0.jar
      ```
 
 #### To set up a development version of this project, follow these steps:
